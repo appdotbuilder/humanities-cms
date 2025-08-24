@@ -16,7 +16,8 @@ import {
   Edit,
   Trash2,
   Calendar,
-  Globe
+  Globe,
+  ArrowLeft
 } from 'lucide-react';
 
 // Import types
@@ -30,6 +31,7 @@ import type {
 } from '../../server/src/schema';
 
 // Import components
+import { PublicBlog } from '@/components/PublicBlog';
 import { BlogPostEditor } from '@/components/BlogPostEditor';
 import { StaticPageEditor } from '@/components/StaticPageEditor';
 import { ProjectEditor } from '@/components/ProjectEditor';
@@ -38,6 +40,7 @@ import { TimelineManager } from '@/components/TimelineManager';
 import { ImageGalleryManager } from '@/components/ImageGalleryManager';
 
 function App() {
+  const [viewMode, setViewMode] = useState<'public' | 'admin'>('public');
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -159,6 +162,11 @@ function App() {
     );
   };
 
+  // Show public blog view
+  if (viewMode === 'public') {
+    return <PublicBlog onAdminMode={() => setViewMode('admin')} />;
+  }
+
   if (showBlogEditor) {
     return (
       <BlogPostEditor 
@@ -195,10 +203,20 @@ function App() {
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              📚 Academic CMS Dashboard
-            </h1>
-            <div className="text-sm text-gray-500">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                onClick={() => setViewMode('public')}
+                className="text-sm"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                View Public Site
+              </Button>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                📚 Academic CMS Dashboard
+              </h1>
+            </div>
+            <div className="text-xs sm:text-sm text-gray-500">
               Welcome back, Professor
             </div>
           </div>
@@ -207,83 +225,85 @@ function App() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
-            <TabsTrigger value="pages">Static Pages</TabsTrigger>
-            <TabsTrigger value="projects">Projects</TabsTrigger>
-            <TabsTrigger value="galleries">Galleries</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            <TabsTrigger value="media">Media</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 lg:grid-cols-7 gap-1">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+            <TabsTrigger value="blog" className="text-xs sm:text-sm">Blog Posts</TabsTrigger>
+            <TabsTrigger value="pages" className="text-xs sm:text-sm">Static Pages</TabsTrigger>
+            <TabsTrigger value="projects" className="text-xs sm:text-sm">Projects</TabsTrigger>
+            <TabsTrigger value="galleries" className="text-xs sm:text-sm">Galleries</TabsTrigger>
+            <TabsTrigger value="timeline" className="text-xs sm:text-sm">Timeline</TabsTrigger>
+            <TabsTrigger value="media" className="text-xs sm:text-sm">Media</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="p-6">
-                <div className="flex items-center">
-                  <PenTool className="h-8 w-8 text-blue-500" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold text-gray-900">{blogPosts.length}</p>
-                    <p className="text-gray-600">Blog Posts</p>
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <Card className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center">
+                  <PenTool className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 mb-2 sm:mb-0" />
+                  <div className="sm:ml-4">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{blogPosts.length}</p>
+                    <p className="text-sm sm:text-base text-gray-600">Blog Posts</p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-green-500" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold text-gray-900">{staticPages.length}</p>
-                    <p className="text-gray-600">Static Pages</p>
+              <Card className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center">
+                  <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 mb-2 sm:mb-0" />
+                  <div className="sm:ml-4">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{staticPages.length}</p>
+                    <p className="text-sm sm:text-base text-gray-600">Static Pages</p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <div className="flex items-center">
-                  <Project className="h-8 w-8 text-purple-500" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
-                    <p className="text-gray-600">Projects</p>
+              <Card className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center">
+                  <Project className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 mb-2 sm:mb-0" />
+                  <div className="sm:ml-4">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{projects.length}</p>
+                    <p className="text-sm sm:text-base text-gray-600">Projects</p>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-6">
-                <div className="flex items-center">
-                  <Image className="h-8 w-8 text-orange-500" />
-                  <div className="ml-4">
-                    <p className="text-2xl font-bold text-gray-900">{media.length}</p>
-                    <p className="text-gray-600">Media Files</p>
+              <Card className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center">
+                  <Image className="h-6 w-6 sm:h-8 sm:w-8 text-orange-500 mb-2 sm:mb-0" />
+                  <div className="sm:ml-4">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{media.length}</p>
+                    <p className="text-sm sm:text-base text-gray-600">Media Files</p>
                   </div>
                 </div>
               </Card>
             </div>
 
             {/* Recent Activity */}
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Content</h3>
+            <Card className="p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold mb-4">Recent Content</h3>
               <div className="space-y-4">
                 {[...blogPosts, ...staticPages]
                   .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
                   .slice(0, 5)
                   .map((item: BlogPost | StaticPage) => (
                     <div key={`${'published_at' in item ? 'blog' : 'page'}-${item.id}`} 
-                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
                       <div className="flex items-center">
                         {'published_at' in item ? 
-                          <PenTool className="h-4 w-4 text-blue-500 mr-3" /> :
-                          <FileText className="h-4 w-4 text-green-500 mr-3" />
+                          <PenTool className="h-4 w-4 text-blue-500 mr-3 flex-shrink-0" /> :
+                          <FileText className="h-4 w-4 text-green-500 mr-3 flex-shrink-0" />
                         }
-                        <div>
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-sm text-gray-500">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm sm:text-base truncate">{item.title}</p>
+                          <p className="text-xs sm:text-sm text-gray-500">
                             Updated {formatDate(item.updated_at)}
                           </p>
                         </div>
                       </div>
-                      {getStatusBadge(item.status)}
+                      <div className="self-start sm:self-center">
+                        {getStatusBadge(item.status)}
+                      </div>
                     </div>
                   ))}
               </div>
@@ -292,47 +312,56 @@ function App() {
 
           {/* Blog Posts Tab */}
           <TabsContent value="blog" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Blog Posts</h2>
-              <Button onClick={() => setShowBlogEditor(true)}>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <h2 className="text-lg sm:text-xl font-semibold">Blog Posts</h2>
+              <Button onClick={() => setShowBlogEditor(true)} className="self-start sm:self-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                New Post
+                <span className="hidden sm:inline">New Post</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </div>
 
             <div className="grid gap-6">
               {blogPosts.map((post: BlogPost) => (
-                <Card key={post.id} className="p-6">
-                  <div className="flex justify-between items-start">
+                <Card key={post.id} className="p-4 sm:p-6">
+                  <div className="flex flex-col space-y-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                      <h3 className="text-base sm:text-lg font-semibold mb-2 pr-2">{post.title}</h3>
                       {post.excerpt && (
-                        <p className="text-gray-600 mb-3">{post.excerpt}</p>
+                        <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-2">{post.excerpt}</p>
                       )}
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                         <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                           {post.published_at ? formatDate(post.published_at) : 'Not published'}
                         </span>
-                        <span>Updated {formatDate(post.updated_at)}</span>
+                        <span className="hidden sm:inline">Updated {formatDate(post.updated_at)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(post.status)}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit('blog', post)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete('blog', post.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        {getStatusBadge(post.status)}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit('blog', post)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('blog', post.id)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -342,51 +371,60 @@ function App() {
 
           {/* Static Pages Tab */}
           <TabsContent value="pages" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Static Pages</h2>
-              <Button onClick={() => setShowPageEditor(true)}>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <h2 className="text-lg sm:text-xl font-semibold">Static Pages</h2>
+              <Button onClick={() => setShowPageEditor(true)} className="self-start sm:self-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                New Page
+                <span className="hidden sm:inline">New Page</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </div>
 
             <div className="grid gap-6">
               {staticPages.map((page: StaticPage) => (
-                <Card key={page.id} className="p-6">
-                  <div className="flex justify-between items-start">
+                <Card key={page.id} className="p-4 sm:p-6">
+                  <div className="flex flex-col space-y-4">
                     <div className="flex-1">
-                      <div className="flex items-center mb-2">
-                        <h3 className="text-lg font-semibold">{page.title}</h3>
+                      <div className="flex flex-col sm:flex-row sm:items-center mb-2 gap-2">
+                        <h3 className="text-base sm:text-lg font-semibold">{page.title}</h3>
                         {page.is_homepage && (
-                          <Badge className="ml-2 bg-blue-100 text-blue-800">
+                          <Badge className="bg-blue-100 text-blue-800 self-start">
                             Homepage
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                         <span className="flex items-center">
-                          <Globe className="h-4 w-4 mr-1" />
-                          /{page.slug}
+                          <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="truncate">/{page.slug}</span>
                         </span>
-                        <span>Updated {formatDate(page.updated_at)}</span>
+                        <span className="hidden sm:inline">Updated {formatDate(page.updated_at)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(page.status)}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit('page', page)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete('page', page.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        {getStatusBadge(page.status)}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit('page', page)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('page', page.id)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -396,70 +434,86 @@ function App() {
 
           {/* Projects Tab */}
           <TabsContent value="projects" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Projects</h2>
-              <Button onClick={() => setShowProjectEditor(true)}>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+              <h2 className="text-lg sm:text-xl font-semibold">Projects</h2>
+              <Button onClick={() => setShowProjectEditor(true)} className="self-start sm:self-auto">
                 <Plus className="h-4 w-4 mr-2" />
-                New Project
+                <span className="hidden sm:inline">New Project</span>
+                <span className="sm:hidden">New</span>
               </Button>
             </div>
 
             <div className="grid gap-6">
               {projects.map((project: ProjectType) => (
-                <Card key={project.id} className="p-6">
-                  <div className="flex justify-between items-start">
+                <Card key={project.id} className="p-4 sm:p-6">
+                  <div className="flex flex-col space-y-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-2">{project.title}</h3>
-                      <p className="text-gray-600 mb-3">{project.description}</p>
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {project.technologies.map((tech: string, index: number) => (
-                          <Badge key={index} variant="secondary">
+                      <h3 className="text-base sm:text-lg font-semibold mb-2">{project.title}</h3>
+                      <p className="text-gray-600 mb-3 text-sm sm:text-base line-clamp-3">{project.description}</p>
+                      <div className="flex flex-wrap gap-1 sm:gap-2 mb-3">
+                        {project.technologies.slice(0, 4).map((tech: string, index: number) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
                             {tech}
                           </Badge>
                         ))}
+                        {project.technologies.length > 4 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{project.technologies.length - 4}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 space-y-1 sm:space-y-0">
                         {project.start_date && (
                           <span>{formatDate(project.start_date)}</span>
                         )}
-                        {project.project_url && (
-                          <a 
-                            href={project.project_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            View Project
-                          </a>
-                        )}
-                        {project.github_url && (
-                          <a 
-                            href={project.github_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline"
-                          >
-                            GitHub
-                          </a>
-                        )}
+                        <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
+                          {project.project_url && (
+                            <a 
+                              href={project.project_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              View Project
+                            </a>
+                          )}
+                          {project.github_url && (
+                            <a 
+                              href={project.github_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:underline"
+                            >
+                              GitHub
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      {getStatusBadge(project.status)}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit('project', project)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete('project', project.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        {getStatusBadge(project.status)}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit('project', project)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete('project', project.id)}
+                          className="px-2 sm:px-3"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:ml-1 sm:inline">Delete</span>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </Card>

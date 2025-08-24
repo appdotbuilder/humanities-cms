@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
-import { trpc } from '@/utils/trpc';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,32 +6,15 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  Save, 
-  Eye, 
-  Globe, 
-  Share2,
-  Image,
-  Calendar
-} from 'lucide-react';
+import { ArrowLeft, Save, Eye } from 'lucide-react';
+import { trpc } from '@/utils/trpc';
 
+// Import types  
 import type { 
-  BlogPost, 
-  CreateBlogPostInput, 
-  UpdateBlogPostInput,
-  Media,
-  SeoMetadata,
-  SocialSharingSettings
+  BlogPost,
+  CreateBlogPostInput,
+  UpdateBlogPostInput
 } from '../../../server/src/schema';
-
-import { RichTextEditor } from '@/components/RichTextEditor';
-import { MediaPicker } from '@/components/MediaPicker';
-import { SeoEditor } from '@/components/SeoEditor';
-import { SocialSharingEditor } from '@/components/SocialSharingEditor';
 
 interface BlogPostEditorProps {
   post?: BlogPost | null;
@@ -42,165 +24,61 @@ interface BlogPostEditorProps {
 
 export function BlogPostEditor({ post, onClose, onSave }: BlogPostEditorProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('content');
-  const [showMediaPicker, setShowMediaPicker] = useState(false);
-  
-  const [formData, setFormData] = useState<CreateBlogPostInput>({
-    title: '',
-    slug: '',
-    content: '',
-    excerpt: null,
-    featured_image_id: null,
-    status: 'draft',
-    published_at: null
+  const [formData, setFormData] = useState({
+    title: post?.title || '',
+    slug: post?.slug || '',
+    content: post?.content || '',
+    excerpt: post?.excerpt || '',
+    status: post?.status || 'draft' as const,
+    published_at: post?.published_at ? new Date(post.published_at).toISOString().split('T')[0] : ''
   });
 
-  const [featuredImage, setFeaturedImage] = useState<Media | null>(null);
-  const [seoData, setSeoData] = useState<SeoMetadata | null>(null);
-  const [socialSettings, setSocialSettings] = useState<SocialSharingSettings | null>(null);
-
-  // Load existing data
-  const loadData = useCallback(async () => {
-    if (post) {
-      setFormData({
-        title: post.title,
-        slug: post.slug,
-        content: post.content,
-        excerpt: post.excerpt,
-        featured_image_id: post.featured_image_id,
-        status: post.status,
-        published_at: post.published_at
-      });
-
-      // Load featured image
-      if (post.featured_image_id) {
-        try {
-          const image = await trpc.getMediaById.query({ id: post.featured_image_id });
-          setFeaturedImage(image);
-        } catch (error) {
-          console.error('Failed to load featured image:', error);
-        }
-      }
-
-      // Load SEO data
-      try {
-        const seo = await trpc.getSeoMetadata.query({
-          contentType: 'blog_post',
-          contentId: post.id
-        });
-        setSeoData(seo);
-      } catch (error) {
-        console.log('No SEO data found');
-      }
-
-      // Load social sharing settings
-      try {
-        const social = await trpc.getSocialSharingSettings.query({
-          contentType: 'blog_post',
-          contentId: post.id
-        });
-        setSocialSettings(social);
-      } catch (error) {
-        console.log('No social settings found');
-      }
-    }
-  }, [post]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   // Auto-generate slug from title
-  const generateSlug = (title: string) => {
+  const generateSlug = useCallback((title: string) => {
     return title
       .toLowerCase()
-      .replace(/[^a-z0-9 ]/g, '')
-      .replace(/\s+/g, '-')
-      .trim();
-  };
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }, []);
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const title = e.target.value;
-    setFormData((prev: CreateBlogPostInput) => ({
+  const handleTitleChange = (title: string) => {
+    setFormData(prev => ({
       ...prev,
       title,
-      slug: !post ? generateSlug(title) : prev.slug // Only auto-generate for new posts
+      slug: post ? prev.slug : generateSlug(title)
     }));
   };
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
+    
     try {
-      let savedPost: BlogPost;
-      
       if (post) {
         // Update existing post
         const updateData: UpdateBlogPostInput = {
           id: post.id,
-          ...formData
+          title: formData.title,
+          slug: formData.slug,
+          content: formData.content,
+          excerpt: formData.excerpt || null,
+          status: formData.status,
+          published_at: formData.published_at ? new Date(formData.published_at) : null
         };
-        savedPost = await trpc.updateBlogPost.mutate(updateData);
+        await trpc.updateBlogPost.mutate(updateData);
       } else {
         // Create new post
-        savedPost = await trpc.createBlogPost.mutate(formData);
+        const createData: CreateBlogPostInput = {
+          title: formData.title,
+          slug: formData.slug,
+          content: formData.content,
+          excerpt: formData.excerpt || null,
+          featured_image_id: null,
+          status: formData.status,
+          published_at: formData.published_at ? new Date(formData.published_at) : null
+        };
+        await trpc.createBlogPost.mutate(createData);
       }
-
-      // Update SEO metadata if changed
-      if (seoData && savedPost) {
-        if (seoData.id) {
-          await trpc.updateSeoMetadata.mutate({
-            id: seoData.id,
-            meta_title: seoData.meta_title,
-            meta_description: seoData.meta_description,
-            social_image_id: seoData.social_image_id,
-            og_title: seoData.og_title,
-            og_description: seoData.og_description,
-            twitter_title: seoData.twitter_title,
-            twitter_description: seoData.twitter_description,
-            canonical_url: seoData.canonical_url,
-            robots: seoData.robots
-          });
-        } else {
-          await trpc.createSeoMetadata.mutate({
-            content_type: 'blog_post',
-            content_id: savedPost.id,
-            meta_title: seoData.meta_title,
-            meta_description: seoData.meta_description,
-            social_image_id: seoData.social_image_id,
-            og_title: seoData.og_title,
-            og_description: seoData.og_description,
-            twitter_title: seoData.twitter_title,
-            twitter_description: seoData.twitter_description,
-            canonical_url: seoData.canonical_url,
-            robots: seoData.robots
-          });
-        }
-      }
-
-      // Update social sharing settings if changed
-      if (socialSettings && savedPost) {
-        if (socialSettings.id) {
-          await trpc.updateSocialSharingSettings.mutate({
-            id: socialSettings.id,
-            enable_twitter: socialSettings.enable_twitter,
-            enable_facebook: socialSettings.enable_facebook,
-            enable_linkedin: socialSettings.enable_linkedin,
-            enable_copy_link: socialSettings.enable_copy_link,
-            custom_message: socialSettings.custom_message
-          });
-        } else {
-          await trpc.createSocialSharingSettings.mutate({
-            content_type: 'blog_post',
-            content_id: savedPost.id,
-            enable_twitter: socialSettings.enable_twitter,
-            enable_facebook: socialSettings.enable_facebook,
-            enable_linkedin: socialSettings.enable_linkedin,
-            enable_copy_link: socialSettings.enable_copy_link,
-            custom_message: socialSettings.custom_message
-          });
-        }
-      }
-
       onSave();
     } catch (error) {
       console.error('Failed to save blog post:', error);
@@ -209,186 +87,125 @@ export function BlogPostEditor({ post, onClose, onSave }: BlogPostEditorProps) {
     }
   };
 
-  const handleMediaSelect = (media: Media) => {
-    setFormData((prev: CreateBlogPostInput) => ({
-      ...prev,
-      featured_image_id: media.id
-    }));
-    setFeaturedImage(media);
-    setShowMediaPicker(false);
-  };
-
-  const removeFeaturedImage = () => {
-    setFormData((prev: CreateBlogPostInput) => ({
-      ...prev,
-      featured_image_id: null
-    }));
-    setFeaturedImage(null);
-  };
-
-  if (showMediaPicker) {
-    return (
-      <MediaPicker
-        onSelect={handleMediaSelect}
-        onClose={() => setShowMediaPicker(false)}
-      />
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Button variant="ghost" onClick={onClose} className="mr-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              <h1 className="text-xl font-semibold">
-                {post ? 'Edit Blog Post' : 'New Blog Post'}
-              </h1>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Badge variant={formData.status === 'published' ? 'default' : 'secondary'}>
-                {formData.status}
-              </Badge>
-              <Button onClick={handleSave} disabled={isLoading}>
-                <Save className="h-4 w-4 mr-2" />
-                {isLoading ? 'Saving...' : 'Save'}
-              </Button>
-            </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex items-center"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {post ? 'Edit Blog Post' : 'New Blog Post'}
+            </h1>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            <Button
+              variant="outline"
+              type="button"
+              className="flex items-center"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading || !formData.title.trim()}
+              className="flex items-center"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {isLoading ? 'Saving...' : 'Save Post'}
+            </Button>
           </div>
         </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="seo">SEO</TabsTrigger>
-            <TabsTrigger value="social">Social Sharing</TabsTrigger>
-          </TabsList>
-
-          {/* Content Tab */}
-          <TabsContent value="content" className="space-y-6">
-            <Card className="p-6">
-              <div className="space-y-6">
-                {/* Title */}
-                <div>
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={handleTitleChange}
-                    placeholder="Enter blog post title"
-                    className="mt-2"
-                    required
-                  />
-                </div>
-
-                {/* Slug */}
-                <div>
-                  <Label htmlFor="slug">URL Slug *</Label>
-                  <div className="flex items-center mt-2">
-                    <span className="text-sm text-gray-500 mr-2">/blog/</span>
-                    <Input
-                      id="slug"
-                      value={formData.slug}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                        setFormData((prev: CreateBlogPostInput) => ({ ...prev, slug: e.target.value }))
-                      }
-                      placeholder="url-slug"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Excerpt */}
-                <div>
-                  <Label htmlFor="excerpt">Excerpt</Label>
-                  <Textarea
-                    id="excerpt"
-                    value={formData.excerpt || ''}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                      setFormData((prev: CreateBlogPostInput) => ({
-                        ...prev,
-                        excerpt: e.target.value || null
-                      }))
-                    }
-                    placeholder="Brief description of the post (optional)"
-                    className="mt-2"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Featured Image */}
-                <div>
-                  <Label>Featured Image</Label>
-                  <div className="mt-2">
-                    {featuredImage ? (
-                      <div className="relative inline-block">
-                        <img
-                          src={`/uploads/${featuredImage.filename}`}
-                          alt={featuredImage.alt_text || featuredImage.original_name}
-                          className="w-48 h-32 object-cover rounded-md border"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={removeFeaturedImage}
-                          className="absolute -top-2 -right-2"
-                        >
-                          ×
-                        </Button>
-                        <p className="text-xs text-gray-500 mt-1">{featuredImage.original_name}</p>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        onClick={() => setShowMediaPicker(true)}
-                      >
-                        <Image className="h-4 w-4 mr-2" />
-                        Select Featured Image
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Content Editor */}
-                <div>
-                  <Label>Content *</Label>
-                  <div className="mt-2">
-                    <RichTextEditor
-                      content={formData.content}
-                      onChange={(content: string) =>
-                        setFormData((prev: CreateBlogPostInput) => ({ ...prev, content }))
-                      }
-                    />
-                  </div>
-                </div>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card className="p-6">
+            <div className="space-y-6">
+              <div>
+                <Label htmlFor="title" className="text-sm font-medium">
+                  Post Title *
+                </Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Enter your blog post title..."
+                  className="mt-1"
+                  required
+                />
               </div>
-            </Card>
-          </TabsContent>
 
-          {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="p-6">
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Publication Settings</h3>
-                
-                {/* Status */}
+              <div>
+                <Label htmlFor="slug" className="text-sm font-medium">
+                  URL Slug *
+                </Label>
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                  placeholder="url-friendly-version"
+                  className="mt-1"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This will be the URL: /blog/{formData.slug}
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="excerpt" className="text-sm font-medium">
+                  Excerpt (Optional)
+                </Label>
+                <Textarea
+                  id="excerpt"
+                  value={formData.excerpt}
+                  onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
+                  placeholder="Brief description of your post..."
+                  rows={3}
+                  className="mt-1"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Short summary shown in blog listings and previews
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="content" className="text-sm font-medium">
+                  Content *
+                </Label>
+                <Textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Write your blog post content here... You can use HTML tags for formatting."
+                  rows={20}
+                  className="mt-1 font-mono text-sm"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  You can use HTML tags for formatting. Rich text editor coming soon!
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status" className="text-sm font-medium">
+                    Status
+                  </Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value: 'draft' | 'published' | 'archived') =>
-                      setFormData((prev: CreateBlogPostInput) => ({ ...prev, status: value }))
+                    onValueChange={(value: 'draft' | 'published' | 'archived') => 
+                      setFormData(prev => ({ ...prev, status: value }))
                     }
                   >
-                    <SelectTrigger className="mt-2">
+                    <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -399,59 +216,22 @@ export function BlogPostEditor({ post, onClose, onSave }: BlogPostEditorProps) {
                   </Select>
                 </div>
 
-                {/* Publish Date */}
                 <div>
-                  <Label htmlFor="published_at">Publish Date</Label>
+                  <Label htmlFor="published_at" className="text-sm font-medium">
+                    Publish Date
+                  </Label>
                   <Input
                     id="published_at"
-                    type="datetime-local"
-                    value={
-                      formData.published_at
-                        ? new Date(formData.published_at.getTime() - formData.published_at.getTimezoneOffset() * 60000)
-                            .toISOString()
-                            .slice(0, 16)
-                        : ''
-                    }
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setFormData((prev: CreateBlogPostInput) => ({
-                        ...prev,
-                        published_at: e.target.value ? new Date(e.target.value) : null
-                      }))
-                    }
-                    className="mt-2"
+                    type="date"
+                    value={formData.published_at}
+                    onChange={(e) => setFormData(prev => ({ ...prev, published_at: e.target.value }))}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Leave empty to publish immediately when status is set to "Published"
-                  </p>
                 </div>
               </div>
-            </Card>
-          </TabsContent>
-
-          {/* SEO Tab */}
-          <TabsContent value="seo">
-            <SeoEditor
-              contentType="blog_post"
-              contentId={post?.id || 0}
-              seoData={seoData}
-              onChange={setSeoData}
-              title={formData.title}
-              excerpt={formData.excerpt}
-            />
-          </TabsContent>
-
-          {/* Social Sharing Tab */}
-          <TabsContent value="social">
-            <SocialSharingEditor
-              contentType="blog_post"
-              contentId={post?.id || 0}
-              settings={socialSettings}
-              onChange={setSocialSettings}
-              title={formData.title}
-              excerpt={formData.excerpt}
-            />
-          </TabsContent>
-        </Tabs>
+            </div>
+          </Card>
+        </form>
       </div>
     </div>
   );
