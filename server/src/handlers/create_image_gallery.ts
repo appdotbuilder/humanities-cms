@@ -1,16 +1,23 @@
+import { db } from '../db';
+import { imageGalleriesTable } from '../db/schema';
 import { type CreateImageGalleryInput, type ImageGallery } from '../schema';
 
-export async function createImageGallery(input: CreateImageGalleryInput): Promise<ImageGallery> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is creating a new image gallery container
-  // that can hold multiple organized images with captions.
-  return Promise.resolve({
-    id: 0, // Placeholder ID
-    title: input.title,
-    description: input.description,
-    slug: input.slug,
-    status: input.status,
-    created_at: new Date(),
-    updated_at: new Date()
-  } as ImageGallery);
-}
+export const createImageGallery = async (input: CreateImageGalleryInput): Promise<ImageGallery> => {
+  try {
+    // Insert image gallery record
+    const result = await db.insert(imageGalleriesTable)
+      .values({
+        title: input.title,
+        description: input.description,
+        slug: input.slug,
+        status: input.status
+      })
+      .returning()
+      .execute();
+
+    return result[0];
+  } catch (error) {
+    console.error('Image gallery creation failed:', error);
+    throw error;
+  }
+};

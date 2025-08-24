@@ -1,29 +1,60 @@
+import { db } from '../db';
+import { staticPagesTable } from '../db/schema';
+import { eq, desc } from 'drizzle-orm';
 import { type StaticPage } from '../schema';
 
 export async function getStaticPages(): Promise<StaticPage[]> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching all static pages from the database
-  // with filtering options and proper ordering.
-  return [];
+  try {
+    const result = await db.select()
+      .from(staticPagesTable)
+      .orderBy(desc(staticPagesTable.created_at))
+      .execute();
+
+    return result;
+  } catch (error) {
+    console.error('Failed to fetch static pages:', error);
+    throw error;
+  }
 }
 
 export async function getStaticPage(id: number): Promise<StaticPage | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching a single static page by ID
-  // including all related data for editing.
-  return null;
+  try {
+    const result = await db.select()
+      .from(staticPagesTable)
+      .where(eq(staticPagesTable.id, id))
+      .execute();
+
+    return result[0] || null;
+  } catch (error) {
+    console.error('Failed to fetch static page by ID:', error);
+    throw error;
+  }
 }
 
 export async function getStaticPageBySlug(slug: string): Promise<StaticPage | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching a single static page by slug
-  // for public viewing with all related data.
-  return null;
+  try {
+    const result = await db.select()
+      .from(staticPagesTable)
+      .where(eq(staticPagesTable.slug, slug))
+      .execute();
+
+    return result[0] || null;
+  } catch (error) {
+    console.error('Failed to fetch static page by slug:', error);
+    throw error;
+  }
 }
 
 export async function getHomepage(): Promise<StaticPage | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching the designated homepage
-  // for the main site navigation.
-  return null;
+  try {
+    const result = await db.select()
+      .from(staticPagesTable)
+      .where(eq(staticPagesTable.is_homepage, true))
+      .execute();
+
+    return result[0] || null;
+  } catch (error) {
+    console.error('Failed to fetch homepage:', error);
+    throw error;
+  }
 }

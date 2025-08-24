@@ -1,25 +1,81 @@
+import { db } from '../db';
+import { staticPagesTable, seoMetadataTable, socialSharingSettingsTable } from '../db/schema';
 import { type UpdateStaticPageInput, type StaticPage } from '../schema';
+import { eq, ne, and } from 'drizzle-orm';
 
 export async function updateStaticPage(input: UpdateStaticPageInput): Promise<StaticPage> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is updating an existing static page,
-  // ensuring only one page can be set as homepage at a time.
-  return Promise.resolve({
-    id: input.id,
-    title: 'Updated Page', // Placeholder values
-    slug: 'updated-page',
-    content: 'Updated content',
-    featured_image_id: null,
-    is_homepage: false,
-    status: 'draft',
-    created_at: new Date(),
-    updated_at: new Date()
-  } as StaticPage);
+  try {
+    // If setting this page as homepage, first unset any existing homepage
+    if (input.is_homepage === true) {
+      await db.update(staticPagesTable)
+        .set({ is_homepage: false })
+        .where(ne(staticPagesTable.id, input.id))
+        .execute();
+    }
+
+    // Prepare update data with only provided fields
+    const updateData: any = {
+      updated_at: new Date()
+    };
+
+    if (input.title !== undefined) updateData.title = input.title;
+    if (input.slug !== undefined) updateData.slug = input.slug;
+    if (input.content !== undefined) updateData.content = input.content;
+    if (input.featured_image_id !== undefined) updateData.featured_image_id = input.featured_image_id;
+    if (input.is_homepage !== undefined) updateData.is_homepage = input.is_homepage;
+    if (input.status !== undefined) updateData.status = input.status;
+
+    // Update the static page
+    const result = await db.update(staticPagesTable)
+      .set(updateData)
+      .where(eq(staticPagesTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Static page with id ${input.id} not found`);
+    }
+
+    return result[0];
+  } catch (error) {
+    console.error('Static page update failed:', error);
+    throw error;
+  }
 }
 
 export async function deleteStaticPage(id: number): Promise<void> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is safely deleting a static page and its related
-  // SEO metadata and social sharing settings.
-  return Promise.resolve();
+  try {
+    // Delete related SEO metadata
+    await db.delete(seoMetadataTable)
+      .where(
+        and(
+          eq(seoMetadataTable.content_type, 'static_page'),
+          eq(seoMetadataTable.content_id, id)
+        )
+      )
+      .execute();
+
+    // Delete related social sharing settings
+    await db.delete(socialSharingSettingsTable)
+      .where(
+        and(
+          eq(socialSharingSettingsTable.content_type, 'static_page'),
+          eq(socialSharingSettingsTable.content_id, id)
+        )
+      )
+      .execute();
+
+    // Delete the static page
+    const result = await db.delete(staticPagesTable)
+      .where(eq(staticPagesTable.id, id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error(`Static page with id ${id} not found`);
+    }
+  } catch (error) {
+    console.error('Static page deletion failed:', error);
+    throw error;
+  }
 }

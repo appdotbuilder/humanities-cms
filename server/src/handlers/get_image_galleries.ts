@@ -1,22 +1,45 @@
+import { db } from '../db';
+import { imageGalleriesTable, galleryImagesTable, mediaTable } from '../db/schema';
 import { type ImageGallery } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export async function getImageGalleries(): Promise<ImageGallery[]> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching all image galleries with their
-  // associated images for management and display.
-  return [];
+  try {
+    const results = await db.select()
+      .from(imageGalleriesTable)
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch image galleries:', error);
+    throw error;
+  }
 }
 
 export async function getImageGallery(id: number): Promise<ImageGallery | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching a single gallery by ID
-  // with all its images ordered by sort_order.
-  return null;
+  try {
+    const results = await db.select()
+      .from(imageGalleriesTable)
+      .where(eq(imageGalleriesTable.id, id))
+      .execute();
+
+    return results[0] || null;
+  } catch (error) {
+    console.error('Failed to fetch image gallery:', error);
+    throw error;
+  }
 }
 
 export async function getImageGalleryBySlug(slug: string): Promise<ImageGallery | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching a single gallery by slug
-  // for public viewing with all associated images.
-  return null;
+  try {
+    const results = await db.select()
+      .from(imageGalleriesTable)
+      .where(eq(imageGalleriesTable.slug, slug))
+      .execute();
+
+    return results[0] || null;
+  } catch (error) {
+    console.error('Failed to fetch image gallery by slug:', error);
+    throw error;
+  }
 }

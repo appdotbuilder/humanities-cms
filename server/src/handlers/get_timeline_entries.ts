@@ -1,29 +1,71 @@
+import { db } from '../db';
+import { timelineEntriesTable } from '../db/schema';
 import { type TimelineEntry } from '../schema';
+import { eq, desc, asc, and } from 'drizzle-orm';
 
 export async function getTimelineEntries(): Promise<TimelineEntry[]> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching all timeline entries ordered by
-  // sort_order and start_date for chronological display.
-  return [];
+  try {
+    const results = await db.select()
+      .from(timelineEntriesTable)
+      .orderBy(
+        asc(timelineEntriesTable.sort_order),
+        desc(timelineEntriesTable.start_date)
+      )
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch timeline entries:', error);
+    throw error;
+  }
 }
 
 export async function getCareerEntries(): Promise<TimelineEntry[]> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching only career-related timeline entries
-  // for dedicated career section display.
-  return [];
+  try {
+    const results = await db.select()
+      .from(timelineEntriesTable)
+      .where(eq(timelineEntriesTable.entry_type, 'career'))
+      .orderBy(
+        asc(timelineEntriesTable.sort_order),
+        desc(timelineEntriesTable.start_date)
+      )
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch career entries:', error);
+    throw error;
+  }
 }
 
 export async function getEducationEntries(): Promise<TimelineEntry[]> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching only education-related timeline entries
-  // for dedicated education section display.
-  return [];
+  try {
+    const results = await db.select()
+      .from(timelineEntriesTable)
+      .where(eq(timelineEntriesTable.entry_type, 'education'))
+      .orderBy(
+        asc(timelineEntriesTable.sort_order),
+        desc(timelineEntriesTable.start_date)
+      )
+      .execute();
+
+    return results;
+  } catch (error) {
+    console.error('Failed to fetch education entries:', error);
+    throw error;
+  }
 }
 
 export async function getTimelineEntry(id: number): Promise<TimelineEntry | null> {
-  // This is a placeholder declaration! Real code should be implemented here.
-  // The goal of this handler is fetching a single timeline entry by ID
-  // for editing purposes.
-  return null;
+  try {
+    const results = await db.select()
+      .from(timelineEntriesTable)
+      .where(eq(timelineEntriesTable.id, id))
+      .execute();
+
+    return results.length > 0 ? results[0] : null;
+  } catch (error) {
+    console.error('Failed to fetch timeline entry:', error);
+    throw error;
+  }
 }
