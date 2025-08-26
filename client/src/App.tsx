@@ -70,12 +70,12 @@ function App() {
         timelineResult,
         mediaResult
       ] = await Promise.all([
-        trpc.getBlogPosts.query(),
-        trpc.getStaticPages.query(),
-        trpc.getProjects.query(),
-        trpc.getImageGalleries.query(),
-        trpc.getTimelineEntries.query(),
-        trpc.getMedia.query()
+        trpc.getBlogPosts.query().catch(() => []),
+        trpc.getStaticPages.query().catch(() => []),
+        trpc.getProjects.query().catch(() => []),
+        trpc.getImageGalleries.query().catch(() => []),
+        trpc.getTimelineEntries.query().catch(() => []),
+        trpc.getMedia.query().catch(() => [])
       ]);
       
       setBlogPosts(postsResult);
@@ -86,6 +86,13 @@ function App() {
       setMedia(mediaResult);
     } catch (error) {
       console.error('Failed to load content:', error);
+      // Set empty arrays as fallback
+      setBlogPosts([]);
+      setStaticPages([]);
+      setProjects([]);
+      setGalleries([]);
+      setTimelineEntries([]);
+      setMedia([]);
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +168,20 @@ function App() {
       </Badge>
     );
   };
+
+  // Show loading state on initial load
+  if (isLoading && viewMode === 'admin' && 
+      blogPosts.length === 0 && staticPages.length === 0 && projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading CMS Dashboard</h2>
+          <p className="text-gray-600">Connecting to backend services...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Show public blog view
   if (viewMode === 'public') {

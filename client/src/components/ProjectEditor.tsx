@@ -5,9 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, Eye, Plus, X } from 'lucide-react';
 import { trpc } from '@/utils/trpc';
+import { RichTextEditor } from './RichTextEditor';
 
 // Import types  
 import type { 
@@ -24,8 +24,7 @@ interface ProjectEditorProps {
 
 export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [newTechnology, setNewTechnology] = useState('');
-  
+  const [newTech, setNewTech] = useState('');
   const [formData, setFormData] = useState({
     title: project?.title || '',
     slug: project?.slug || '',
@@ -57,19 +56,19 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
   };
 
   const addTechnology = () => {
-    if (newTechnology.trim() && !formData.technologies.includes(newTechnology.trim())) {
+    if (newTech.trim() && !formData.technologies.includes(newTech.trim())) {
       setFormData(prev => ({
         ...prev,
-        technologies: [...prev.technologies, newTechnology.trim()]
+        technologies: [...prev.technologies, newTech.trim()]
       }));
-      setNewTechnology('');
+      setNewTech('');
     }
   };
 
-  const removeTechnology = (techToRemove: string) => {
+  const removeTechnology = (tech: string) => {
     setFormData(prev => ({
       ...prev,
-      technologies: prev.technologies.filter(tech => tech !== techToRemove)
+      technologies: prev.technologies.filter(t => t !== tech)
     }));
   };
 
@@ -162,34 +161,35 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
         <form onSubmit={handleSubmit} className="space-y-8">
           <Card className="p-6">
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="title" className="text-sm font-medium">
-                    Project Title *
-                  </Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleTitleChange(e.target.value)}
-                    placeholder="Enter your project title..."
-                    className="mt-1"
-                    required
-                  />
-                </div>
+              <div>
+                <Label htmlFor="title" className="text-sm font-medium">
+                  Project Title *
+                </Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  placeholder="Enter your project title..."
+                  className="mt-1"
+                  required
+                />
+              </div>
 
-                <div>
-                  <Label htmlFor="slug" className="text-sm font-medium">
-                    URL Slug *
-                  </Label>
-                  <Input
-                    id="slug"
-                    value={formData.slug}
-                    onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                    placeholder="url-friendly-version"
-                    className="mt-1"
-                    required
-                  />
-                </div>
+              <div>
+                <Label htmlFor="slug" className="text-sm font-medium">
+                  URL Slug *
+                </Label>
+                <Input
+                  id="slug"
+                  value={formData.slug}
+                  onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
+                  placeholder="url-friendly-version"
+                  className="mt-1"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This will be the URL: /projects/{formData.slug}
+                </p>
               </div>
 
               <div>
@@ -209,22 +209,23 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
 
               <div>
                 <Label htmlFor="content" className="text-sm font-medium">
-                  Detailed Content (Optional)
+                  Detailed Content
                 </Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Detailed project information, methodology, results, etc..."
-                  rows={10}
-                  className="mt-1 font-mono text-sm"
+                <RichTextEditor
+                  content={formData.content}
+                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                  placeholder="Write detailed project information here..."
+                  className="mt-1"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Detailed project information, methodology, results, etc.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="project_url" className="text-sm font-medium">
-                    Project URL (Optional)
+                    Project URL
                   </Label>
                   <Input
                     id="project_url"
@@ -238,7 +239,7 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
 
                 <div>
                   <Label htmlFor="github_url" className="text-sm font-medium">
-                    GitHub URL (Optional)
+                    GitHub URL
                   </Label>
                   <Input
                     id="github_url"
@@ -254,37 +255,48 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
               <div>
                 <Label className="text-sm font-medium">Technologies Used</Label>
                 <div className="mt-2 space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    {formData.technologies.map((tech) => (
-                      <Badge key={tech} variant="secondary" className="flex items-center gap-1">
-                        {tech}
-                        <button
-                          type="button"
-                          onClick={() => removeTechnology(tech)}
-                          className="hover:bg-gray-300 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
                   <div className="flex gap-2">
                     <Input
-                      value={newTechnology}
-                      onChange={(e) => setNewTechnology(e.target.value)}
-                      placeholder="Add a technology..."
-                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTechnology())}
+                      value={newTech}
+                      onChange={(e) => setNewTech(e.target.value)}
+                      placeholder="Add technology (e.g., React, Python, etc.)"
                       className="flex-1"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTechnology();
+                        }
+                      }}
                     />
                     <Button
                       type="button"
-                      onClick={addTechnology}
                       variant="outline"
-                      size="sm"
+                      onClick={addTechnology}
+                      disabled={!newTech.trim()}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                  
+                  {formData.technologies.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.technologies.map((tech, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm"
+                        >
+                          {tech}
+                          <button
+                            type="button"
+                            onClick={() => removeTechnology(tech)}
+                            className="text-blue-600 hover:text-blue-800 ml-1"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -335,23 +347,6 @@ export function ProjectEditor({ project, onClose, onSave }: ProjectEditorProps) 
                     className="mt-1"
                   />
                 </div>
-              </div>
-
-              <div>
-                <Label htmlFor="sort_order" className="text-sm font-medium">
-                  Display Order
-                </Label>
-                <Input
-                  id="sort_order"
-                  type="number"
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
-                  className="mt-1"
-                  min="0"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Higher numbers appear first
-                </p>
               </div>
             </div>
           </Card>

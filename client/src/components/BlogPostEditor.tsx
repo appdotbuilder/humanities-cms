@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save, Eye } from 'lucide-react';
 import { trpc } from '@/utils/trpc';
+import { RichTextEditor } from './RichTextEditor';
 
 // Import types  
 import type { 
@@ -180,17 +181,14 @@ export function BlogPostEditor({ post, onClose, onSave }: BlogPostEditorProps) {
                 <Label htmlFor="content" className="text-sm font-medium">
                   Content *
                 </Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Write your blog post content here... You can use HTML tags for formatting."
-                  rows={20}
-                  className="mt-1 font-mono text-sm"
-                  required
+                <RichTextEditor
+                  content={formData.content}
+                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                  placeholder="Write your blog post content here..."
+                  className="mt-1"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  You can use HTML tags for formatting. Rich text editor coming soon!
+                  Use the toolbar above to format your content with headings, lists, links, images, and more.
                 </p>
               </div>
 
